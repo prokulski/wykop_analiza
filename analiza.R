@@ -15,8 +15,8 @@ library(randomForest)
 FILE <- "~/PythonProjects/Wykop/plik.csv"
 
 wykopy <- data.table::fread(FILE,
-                col.names = c("id", "wykopy", "nick", "czas",
-                              "tag", "tytul", "link", "opis")) %>%
+                            col.names = c("id", "wykopy", "nick", "czas",
+                                          "tag", "tytul", "link", "opis")) %>%
   select(-id) %>%
   mutate(czas = ymd_hms(czas)) %>%
   mutate(tag = gsub("##", "#", tag)) %>%
@@ -31,14 +31,15 @@ pl_stop_words <- read_lines("~/RProjects/!polimorfologik/polish_stopwords.txt") 
 
 
 
-# liczba wykopów wg czasu
+# liczba znalezisk wg czasu
 wykopy %>%
-  distinct(czas, wykopy) %>%
+  distinct(czas, link) %>%
+  mutate(data = as_date(czas)) %>%
+  count(data) %>%
   ggplot() +
-  geom_point(aes(czas, wykopy),
+  geom_point(aes(data, n),
              size = 0.1, alpha = 0.15) +
-  geom_smooth(aes(czas, wykopy)) +
-  scale_y_log10()
+  geom_smooth(aes(data, n))
 
 
 # najwyżej wykopane
@@ -356,8 +357,20 @@ plot(g,
      edge.arrow.size = 0,
      layout = layout_with_kk)
 
-# export do D3.js
 
+# zmiana grafu na obiekt D3
+library(networkD3)
+
+# przygotowanie interaktywnego grafu
+D3_network_LM <- simpleNetwork(g_df,
+                               Source = "tagA", Target = "tagB",
+                               linkColour = "#bbb", nodeColour = "#000",
+                               opacity = 0.8, zoom = TRUE,
+                               fontSize = 15, fontFamily = "sans-serif",
+                               height = 500, width = 500)
+
+# zapisanie do HTMLa
+saveNetwork(D3_network_LM, "D3_LM.html", selfcontained = TRUE)
 
 
 # Stopień węzła
@@ -420,20 +433,28 @@ plot(g,
      edge.arrow.size = 0,
      layout = layout_with_kk)
 
-tibble(names =  wc$names,
-       membership = wc$membership,
-       modularity = wc$modularity) %>%
+# Modułowość to miara struktury sieci. Została zaprojektowana do pomiaru siły podziału sieci na moduły (zwane również grupami, klastrami lub społecznościami). Sieci o wysokiej modularności mają gęste połączenia między węzłami w obrębie modułów, ale rzadkie połączenia między węzłami w różnych modułach. Modułowość jest często wykorzystywana w metodach optymalizacyjnych do wykrywania struktury społeczności w sieciach.
+
+plot_data <- tibble(names = wc$names,
+                    membership = wc$membership,
+                    modularity = wc$modularity) %>%
   group_by(membership) %>%
-  mutate(n = n()) %>% ungroup() %>%
-  filter(n >= quantile(n, 0.5)) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  filter(n >= quantile(n, 0.5))
+
+plot_data %>%
   arrange(modularity) %>%
   mutate(names = fct_inorder(names)) %>%
   ggplot() +
-  geom_col(aes(names, modularity,fill = as.factor(membership))) +
+  geom_col(aes(names, modularity, fill = as.factor(membership)), show.legend = FALSE) +
   coord_flip() +
   facet_wrap(~membership, scales="free_y")
 
-# Modułowość to miara struktury sieci. Została zaprojektowana do pomiaru siły podziału sieci na moduły (zwane również grupami, klastrami lub społecznościami). Sieci o wysokiej modularności mają gęste połączenia między węzłami w obrębie modułów, ale rzadkie połączenia między węzłami w różnych modułach. Modułowość jest często wykorzystywana w metodach optymalizacyjnych do wykrywania struktury społeczności w sieciach.
+plot_data %>%
+  arrange(membership, desc(modularity))
+
+
 
 ## model
 model_data <- wykopy %>%
