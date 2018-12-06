@@ -1,8 +1,22 @@
+'''
+scrapper danych z głównej strony Wykop.pl
+'''
+
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
 
+'''
+funkcja z bloku dla jednego znaleziska wydziela gromadzone informacje:
+- wykopy = liczba wykopów
+- autor = nick, który dodał znalezisko
+- data = data dodania znaleziska
+- tags = tagi opisujące znalezisko
+- tytul = tytuł znaleziska
+- link = dokąd prowadzi znalezisko?
+- opis = opis znaleziska
+'''
 def grab_wykop_item_data(fitem):
 	wykopy = fitem.select("a.ajax span")
 	if(len(wykopy) != 0):
@@ -22,11 +36,13 @@ def grab_wykop_item_data(fitem):
 
 		return True, wykopy, autor, data, tags, tytul, link, opis
 
-	return False, 
+	return False,
+
+# pusta ramka danych na zebrane dane
+# dane = pd.DataFrame()
 
 
-dane = pd.DataFrame()
-
+# weź pierwsze 3000 stron z Wykop.pl
 for i in range(1, 3000, 1):
 	# budujemy urla
 	page_url = f"https://www.wykop.pl/strona/{i}/"
@@ -63,9 +79,13 @@ for i in range(1, 3000, 1):
 							'opis': dane_temp[7]
 							}
 				dane_temp = pd.DataFrame(dane_temp)
+
+				# dopisz do pliku z danymi
 				dane_temp.to_csv("plik.csv", mode='a', header = False)
+
+				# dodaj do pełnej ramki danych
 #				dane = dane.append(dane_temp, ignore_index = True)
 
 
-#dane.to_csv("plik.csv")
-#dane.to_json("plik.json")
+# dane.to_csv("plik.csv")
+# dane.to_json("plik.json")
