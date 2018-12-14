@@ -36,9 +36,9 @@ def grab_wykop_item_data(fitem):
             if temp_tag[0] == "#":
                 tags.append(temp_tag)
 
-        return True, wykopy, autor, data, tags, tytul, link, opis
+        return wykopy, autor, data, "||".join(tags), tytul, link, opis
 
-    return False,
+    return None
 
 
 # [] or list all is loaded to memory
