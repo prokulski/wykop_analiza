@@ -41,10 +41,14 @@ def grab_wykop_item_data(fitem):
     return False,
 
 
+# [] or list all is loaded to memory
 urls = [
     "https://www.wykop.pl/strona/{}".format(page)
     for page in range(1, 3000, 1)
 ]
+
+# x = () is generator, no action taken until next(x) or for is called
+# memory efficient
 
 pages = (requests.get(url) for url in urls)
 contents = (page.content for page in pages)
@@ -53,6 +57,8 @@ lists_of_items = (soup.select('li.iC') for soup in soups)  # just li with class 
 all_items_together = chain.from_iterable(lists_of_items)
 extracted = (grab_wykop_item_data(item) for item in all_items_together)
 filter_out_nones = (item for item in extracted if item is not None)  # Skip Nones
+
+# no action taken to that point
 
 
 def write_to_csv():
